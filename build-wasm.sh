@@ -27,3 +27,5 @@ FINAL_NAME=zlibaux
 $WASM_LD --no-entry --import-undefined --export-all -o build/${FINAL_NAME}-temp.wasm `ls build/*\.ll\.o`
 $WASM2WAT build/${FINAL_NAME}-temp.wasm > build/${FINAL_NAME}.wat
 $WAT2WASM -o build/${FINAL_NAME}.wasm build/${FINAL_NAME}.wat
+
+cp build/${FINAL_NAME}.wasm ./${FINAL_NAME}.wasm
