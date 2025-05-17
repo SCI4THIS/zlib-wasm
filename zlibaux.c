@@ -3,36 +3,51 @@
 #include "zlibaux.h"
 #include <stdio.h>
 
+static void loop_cb(int res, z_stream *z, gz_header *gz, uint8_t *buf, size_t buflen, zlibaux_inflate_args_t *args)
+{
+  if (z->avail_in == 0) {
+    args->input_cb(&z->next_in, &z->avail_in, args->arg);
+  }
+  if (z->avail_out == 0 || res == Z_STREAM_END) {
+    if (z->total_out > 0) {
+      args->output_cb(buf, buflen - z->avail_out, args->arg);
+    }
+    z->next_out = buf;
+    z->avail_out = buflen;
+  }
+}
+
 zlibaux_inflate_res_t zlibaux_inflate(zlibaux_inflate_args_t *args)
 {
-  z_stream  z   = { 0 };
-  gz_header gz  = { 0 };
-
-  int      res = Z_OK;
+  z_stream   z      = { 0 };
+  gz_header  gz     = { 0 };
+  const int  buflen = 1024 * 1024;
+  uint8_t   *buf    = calloc(1, buflen);
+  int        res    = Z_OK;
 
   z.zfree = Z_NULL;
   z.zalloc = Z_NULL;
 
-  args->cb(res, &z, &gz, args->arg);
+  loop_cb(res, &z, &gz, buf, buflen, args);
 
   res = inflateInit2(&z, args->windowBits);
   res = inflateGetHeader(&z, &gz);
 
   do {
     res = inflate(&z, args->flush);
-    switch (res) {
-      case Z_STREAM_ERROR: return ZA_STREAM_ERROR;
-      case Z_DATA_ERROR: return ZA_DATA_ERROR;
-      case Z_STREAM_END: continue;
-      default: break;
+    if (res == Z_STREAM_END) { continue; }
+    if (res == Z_OK) {
+      if (z.avail_in == 0 || z.avail_out == 0) {
+        loop_cb(res, &z, &gz, buf, buflen, args);
+      }
+      continue;
     }
-    if (z.avail_in == 0 || z.avail_out == 0) {
-      args->cb(res, &z, &gz, args->arg);
-    }
+    free(buf);
+    return res;
   } while (res != Z_STREAM_END);
-  args->cb(res, &z, &gz, args->arg);
-
+  loop_cb(res, &z, &gz, buf, buflen, args);
   inflateEnd(&z);
+  free(buf);
   return ZA_STREAM_END;
 }
 

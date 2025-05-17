@@ -4,7 +4,8 @@
 #include <stdint.h>
 #include "zlib.h"
 
-typedef void (*zlibaux_inflate_cb)(int res, z_stream *z, gz_header *gz, void *arg);
+typedef void (*zlibaux_inflate_input_cb)(z_const Bytef **buf, uInt *len, void *arg);
+typedef void (*zlibaux_inflate_output_cb)(z_const Bytef *buf, uInt len, void *arg);
 
 typedef struct zlibaux_st zlibaux_t;
 
@@ -24,10 +25,11 @@ typedef enum {
 } zlibaux_inflate_res_t;
 
 typedef struct {
-  zlibaux_inflate_cb  cb;
-  zlibaux_flush_t     flush;
-  int                 windowBits;
-  void               *arg;
+  zlibaux_flush_t            flush;
+  int                        windowBits;
+  zlibaux_inflate_input_cb   input_cb;
+  zlibaux_inflate_output_cb  output_cb;
+  void                      *arg;
 } zlibaux_inflate_args_t;
 
 zlibaux_inflate_res_t zlibaux_inflate(zlibaux_inflate_args_t *args);
