@@ -5,16 +5,11 @@
 
 typedef voidpf (*alloc_func)(voidpf opaque, uInt items, uInt size);
 typedef void   (*free_func)(voidpf opaque, voidpf address);
-
-static uint8_t memory[1024 * 1024] = { 0 };
-static int     memory_i = 0;
+extern uint8_t *wasmalloc(size_t size);
 
 voidpf zalloc(voidpf opaque, uInt items, uInt size)
 {
-  int alloc_size = (((items * size) + 7) >> 3) << 3;
-  voidpf ret = &memory[memory_i];
-  memory_i += alloc_size;
-  return ret;
+  return wasmalloc(items * size);
 }
 
 void zfree(voidpf opaque, voidpf address)
@@ -23,7 +18,7 @@ void zfree(voidpf opaque, voidpf address)
 
 static void loop_cb(int res, z_stream *z, gz_header *gz, uint8_t *buf, size_t buflen, zlibaux_inflate_args_t *args)
 {
-  if (z->avail_in == 0) {
+  if (z->avail_in == 0 && res != Z_STREAM_END) {
     args->input_cb(&z->next_in, &z->avail_in, args->arg);
   }
   if (z->avail_out == 0 || res == Z_STREAM_END) {
@@ -40,11 +35,12 @@ zlibaux_inflate_res_t zlibaux_inflate(zlibaux_inflate_args_t *args)
   z_stream   z                = { 0 };
   gz_header  gz               = { 0 };
   const int  buflen           = 1024 * 1024;
-  uint8_t    buf[1024 * 1024] = { 0 };
+  uint8_t   *buf              = NULL;
   int        res              = Z_OK;
 
   z.zfree = zfree;
   z.zalloc = zalloc;
+  buf = wasmalloc(buflen);
 
   loop_cb(res, &z, &gz, buf, buflen, args);
 
