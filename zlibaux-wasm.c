@@ -37,6 +37,5 @@ int zlibaux_wasm_main()
 
   res = zlibaux_inflate(&za_inflate_args);
 
-  free(args.buf);
   return 0;
 }
