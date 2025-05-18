@@ -6,12 +6,12 @@
 typedef voidpf (*alloc_func)(voidpf opaque, uInt items, uInt size);
 typedef void   (*free_func)(voidpf opaque, voidpf address);
 
-static uint8_t memory[1024 * 1024];
+static uint8_t memory[1024 * 1024] = { 0 };
 static int     memory_i = 0;
 
 voidpf zalloc(voidpf opaque, uInt items, uInt size)
 {
-  int alloc_size = ((items * size) + 7) >> 3;
+  int alloc_size = (((items * size) + 7) >> 3) << 3;
   voidpf ret = &memory[memory_i];
   memory_i += alloc_size;
   return ret;
