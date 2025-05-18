@@ -12,7 +12,7 @@ do
   clang -o build/${FILE}.ll -I${INC_EMCC} --target=wasm32 -emit-llvm -S zlib/${FILE}
 done
 
-for FILE in zlibaux.c
+for FILE in zlibaux.c zlibaux-wasm.c
 do
   clang -o build/${FILE}.ll -I${INC_EMCC} -Izlib --target=wasm32 -emit-llvm -S ${FILE}
 done
