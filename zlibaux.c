@@ -3,6 +3,24 @@
 #include "zlibaux.h"
 #include <stdio.h>
 
+typedef voidpf (*alloc_func)(voidpf opaque, uInt items, uInt size);
+typedef void   (*free_func)(voidpf opaque, voidpf address);
+
+static uint8_t memory[1024 * 1024];
+static int     memory_i = 0;
+
+voidpf zalloc(voidpf opaque, uInt items, uInt size)
+{
+  int alloc_size = ((items * size) + 7) >> 3;
+  voidpf ret = &memory[memory_i];
+  memory_i += alloc_size;
+  return ret;
+}
+
+void zfree(voidpf opaque, voidpf address)
+{
+}
+
 static void loop_cb(int res, z_stream *z, gz_header *gz, uint8_t *buf, size_t buflen, zlibaux_inflate_args_t *args)
 {
   if (z->avail_in == 0) {
@@ -19,14 +37,14 @@ static void loop_cb(int res, z_stream *z, gz_header *gz, uint8_t *buf, size_t bu
 
 zlibaux_inflate_res_t zlibaux_inflate(zlibaux_inflate_args_t *args)
 {
-  z_stream   z      = { 0 };
-  gz_header  gz     = { 0 };
-  const int  buflen = 1024 * 1024;
-  uint8_t   *buf    = calloc(1, buflen);
-  int        res    = Z_OK;
+  z_stream   z                = { 0 };
+  gz_header  gz               = { 0 };
+  const int  buflen           = 1024 * 1024;
+  uint8_t    buf[1024 * 1024] = { 0 };
+  int        res              = Z_OK;
 
-  z.zfree = Z_NULL;
-  z.zalloc = Z_NULL;
+  z.zfree = zfree;
+  z.zalloc = zalloc;
 
   loop_cb(res, &z, &gz, buf, buflen, args);
 
@@ -42,12 +60,10 @@ zlibaux_inflate_res_t zlibaux_inflate(zlibaux_inflate_args_t *args)
       }
       continue;
     }
-    free(buf);
     return res;
   } while (res != Z_STREAM_END);
   loop_cb(res, &z, &gz, buf, buflen, args);
   inflateEnd(&z);
-  free(buf);
   return ZA_STREAM_END;
 }
 

@@ -26,12 +26,14 @@ static void output_cb(z_const Bytef *buf, uInt len, void *argv)
 
 int zlibaux_wasm_main()
 {
-  args_t                  args            = { 0 };
-  zlibaux_inflate_res_t   res             = ZA_OK;
-  zlibaux_inflate_args_t  za_inflate_args = { ZA_BLOCK, 15 | 16, input_cb, output_cb, &args };
+  args_t                  args             = { 0 };
+  zlibaux_inflate_res_t   res              = ZA_OK;
+  zlibaux_inflate_args_t  za_inflate_args  = { ZA_BLOCK, 15 | 16, input_cb, output_cb, &args };
+  size_t                  buflen           = 1024 * 1024;
+  uint8_t                 buf[1024 * 1024] = { 0 };
 
-  args.buflen = 1024 * 1024;
-  args.buf = calloc(1, args.buflen);
+  args.buflen = buflen;
+  args.buf    = buf;
 
   res = zlibaux_inflate(&za_inflate_args);
 
