@@ -7,9 +7,12 @@ WASM_LD=/home/A/emsdk/upstream/bin/wasm-ld.exe
 WASM2WAT=/home/A/wabt/bin/wasm2wat.exe
 WAT2WASM=/home/A/wabt/bin/wat2wasm.exe
 
+# -DZ_SOLO=1 excludes the zcalloc function, so it doesn't compile a malloc import object
+# requirement.  We define our own alloc function so we don't want it.
+
 for FILE in adler32.c crc32.c deflate.c infback.c inffast.c inflate.c inftrees.c trees.c zutil.c
 do
-  clang -o build/${FILE}.ll -I${INC_EMCC} --target=wasm32 -emit-llvm -S zlib/${FILE}
+  clang -DZ_SOLO=1 -o build/${FILE}.ll -I${INC_EMCC} --target=wasm32 -emit-llvm -S zlib/${FILE}
 done
 
 for FILE in zlibaux.c zlibaux-wasm.c
